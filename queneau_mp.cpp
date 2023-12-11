@@ -13,10 +13,10 @@
 //Global variable specifying the range size handled by each thread
 long chunk_size;
 
-//Returns the offset of the first number after 'a' divisible by 'b' (returns 0 if a|b)
+//Returns the positive offset of the first number after 'a' divisible by 'b' (returns 0 if b|a)
 long offset(long a, int b)
 {
-    return (-a % b + b) % b;
+    return (b - (a % b)) % b;
 }
 
 //Counts the number of primes below the square root of the maximum 2n+1 value in the chunk
@@ -33,7 +33,7 @@ int count_primes(long N_max)
 }
 
 //Performs a sieve of eratosthenes on the chunk. Returns an array of bools
-// indicating which numbers in the chunk to skip because 2n+1 is prime
+//indicating which numbers in the chunk to skip because 2n+1 is prime or n%4=0
 bool* prime_sieve(long chunk_start, int num_primes)
 {
     int i, p;
@@ -79,7 +79,9 @@ std::map<int, char>* factor_sieve(bool* skip, long chunk_start, int num_primes)
     long j, divisor, first_pos, step, chunk_stop;
     std::map<int, char>* factors = new std::map<int, char>[chunk_size];
 
-    //Final n value in chunk, plus one. Only needed to bound p^e when chunk_start is 0
+    //Final n value in chunk, plus one. Only needed to bound p^e when chunk_start is 0. We only
+    //need to check up to final n rather than final 2n, because if (p^e|2n), then (p^e|n) when
+    //p is odd. When p is 2 we only check up to p^e=8 since we throw out all n%4=0 values anyway.
     chunk_stop = chunk_start + chunk_size;
     
     //Loop through all primes below the maximum sqrt(2n) value
@@ -125,6 +127,7 @@ long powmod(long a, long n, long b)
         a = a * a % b;
         n >>= 1;
     }
+    //Force a positive output when a<0
     return (res + b) % b;
 }
 
@@ -182,9 +185,11 @@ std::vector<long> task(long chunk_start)
     {
         if(skip[j]) continue;
         if( is_queneau(chunk_start + j, factors[j]) )
+            qlist.push_back(chunk_start + j);
             //No significant speed improvement by invoking reserve() after
             //counting up the total and doing push_backs in a separate loop
-            qlist.push_back(chunk_start + j);
+            //May still be necessary for memory usage as 'factors' can be
+            //deleted before allocating the memory for 'qlist'
     }
     
     //Don't need these anymore
