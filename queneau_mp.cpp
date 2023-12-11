@@ -57,7 +57,7 @@ bool* prime_sieve(long chunk_start, int num_primes)
         //Calculate offset of first N entry divisible by p.
         mstart = offset((Nmin - p) >> 1, p);
 
-        //Skip p itself if p is in the list
+        //Skip p itself if p is in the chunk
         if(Nmin <= p)
             mstart += p;
 
@@ -127,7 +127,7 @@ long powmod(long a, long n, long b)
         a = a * a % b;
         n >>= 1;
     }
-    //Force a positive output when a<0
+    //Force a positive output when a < 0
     return (res + b) % b;
 }
 
@@ -164,16 +164,16 @@ bool is_queneau(long n, std::map<int, char> pfactors)
 
 //Thread entry point. Finds Queneau numbers within the range specified by chunk_start
 //and the global var chunk_size. Returns a vector of longs containing each Queneau number. 
-std::vector<long> task(long chunk_start)
+std::vector<long> find_queneaus(long chunk_start)
 {
     bool* skip;
     std::map<int, char>* factors;
     std::vector<long> qlist;
 
     long j;
-    int i, num_primes;
+    int num_primes;
     long count = 0;
-    bool is_q;
+    long sum = 0;
 
     //Create the prime sieve and factor sieve
     num_primes = count_primes(2*(chunk_start + chunk_size) - 1);
@@ -184,18 +184,25 @@ std::vector<long> task(long chunk_start)
     for(j = 0; j < chunk_size; j++)
     {
         if(skip[j]) continue;
-        if( is_queneau(chunk_start + j, factors[j]) )
-            qlist.push_back(chunk_start + j);
-            //No significant speed improvement by invoking reserve() after
-            //counting up the total and doing push_backs in a separate loop
-            //May still be necessary for memory usage as 'factors' can be
-            //deleted before allocating the memory for 'qlist'
+        if(is_queneau(chunk_start + j, factors[j]))
+            sum++;
+        else
+            skip[j] = 1;
+    }
+    
+    //Don't need factors anymore; reallocate the memory for qlist
+    delete[] factors;
+    qlist.reserve(sum);
+    
+    //Fill qlist with each Queneau number
+    for(j = 0; j < chunk_size; j++)
+    {
+        if(skip[j]) continue;
+        qlist.push_back(chunk_start + j);
     }
     
     //Don't need these anymore
-    delete[] factors;
     delete[] skip;
-    
     return qlist;
 }
 
@@ -217,7 +224,7 @@ int main(int argc, char *argv[])
     //Use OpenMP to split chunks among threads
     #pragma omp parallel for
     for(int i = 0; i < nchunks; i++)
-        lists[i] = task(start + i * chunk_size);
+        lists[i] = find_queneaus(start + i * chunk_size);
     
     //Count up the total number of Queneaus found
     for(int i = 0; i < nchunks; i++)
