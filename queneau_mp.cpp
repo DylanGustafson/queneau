@@ -1,4 +1,4 @@
-//Queneau searching program by Dylan G.
+//Queneau finding program by Dylan G.
 
 #include <iostream>
 #include <new>
