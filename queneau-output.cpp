@@ -1,7 +1,6 @@
 //Queneau searching program by Dylan G.
 
 #include <iostream>
-#include <string.h>
 #include <fstream>
 #include <new>
 #include <vector>
@@ -15,15 +14,16 @@
 long chunk_size;
 
 //Returns the positive offset of the first number after 'a' divisible by 'b' (returns 0 if b|a)
-long offset(long a, int b)
+long offset(long a, long b)
 {
-    return (b - (a % b)) % b;
+    return (b - a % b) % b;
 }
 
 //Counts the number of primes below the square root of the maximum 2n+1 value in the chunk
 int count_primes(long N_max)
 {
-    int i, p;
+    int i;
+    long p;  //p has to be a long here since we calculate p^2
     for(i = 1; i < sizeof(primes); i++)
     {
         p = primes[i - 1];
@@ -132,8 +132,8 @@ std::vector<long> queneau_sieve(long chunk_start)
             if(divisor == 8 or first_pos >= chunk_size)
                 break;
             
-            //Jump through the array by divisor. If p is 2 we must jumpt through
-            //by half of this step size, as all of our "orders" (2n) are even
+            //Use divisor as a step size for jumping through the chunk. If p is 2
+            //we must halve this step size, as all of our "orders" (2n) are even
             step = (p == 2) ? divisor >> 1 : divisor;
             
             //Tertiary Loop: Loop through each order (2n) in the chunk
@@ -147,7 +147,7 @@ std::vector<long> queneau_sieve(long chunk_start)
                 {
                     order = (chunk_start + j) * 2;
                     
-                    //Use -2 if n % 4 == 3, otherwise check 2
+                    //Use a base of -2 if n % 4 == 3, otherwise use 2
                     root = (chunk_start + j) % 4 == 3 ? -2 : 2;
                     
                     //Check if 2 (or -2) is NOT a primitive root of 2n+1
@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
     std::ofstream outfile(outfile_name);
     if(! outfile.is_open())
     {
-        std::cout << "Could not create output file" << '\n';
+        std::cout << "Could not create output file \"" << outfile_name << "\"\n';
         return 1;
     }
     
