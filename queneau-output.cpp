@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
     std::ofstream outfile(outfile_name);
     if(! outfile.is_open())
     {
-        std::cout << "Could not create output file \"" << outfile_name << "\"\n';
+        std::cout << "Could not create output file \"" << outfile_name << "\"\n";
         return 1;
     }
     
