@@ -34,9 +34,9 @@ int count_primes(long N_max)
 }
 
 //Calculates positive [a^n mod b] in O(log n) time
-long powmod(long a, long n, long b)
+long powmod(__int128 a, long n, long b)
 {
-    long res = 1;
+    __int128 res = 1;
     while (n > 0)
     {
         if (n & 1)
