@@ -1,14 +1,10 @@
 //Queneau searching program by Dylan G.
-
 #include <iostream>
 #include <fstream>
 #include <new>
 #include <vector>
 #include <cstdlib>
 #include <omp.h>
-
-//Loads the global int array "primes" with a list of prime numbers
-#include "primes.cpp"
 
 //Global variable specifying the range size handled by each thread
 long chunk_size;
@@ -20,11 +16,11 @@ long offset(long a, long b)
 }
 
 //Counts the number of primes below the square root of the maximum 2n+1 value in the chunk
-int count_primes(long N_max)
+int count_primes(long N_max, int* primes, int total_primes)
 {
     int i;
     long p;  //p has to be a long here since we calculate p^2
-    for(i = 1; i < sizeof(primes); i++)
+    for(i = 1; i < total_primes; i++)
     {
         p = primes[i - 1];
         if(p * p > N_max)
@@ -50,7 +46,7 @@ long powmod(__int128 a, long n, long b)
 
 //Performs a sieve of eratosthenes on the chunk. Returns an array of bools
 //indicating which numbers in the chunk to skip because 2n+1 is prime or n%4=0
-bool* prime_sieve(long chunk_start, int num_primes)
+bool* prime_sieve(long chunk_start, int num_primes, int* primes)
 {
     int i, p;
     long j, N_min, mstart;
@@ -90,11 +86,12 @@ bool* prime_sieve(long chunk_start, int num_primes)
 //Thread entry point. Finds all Queneau numbers from chunk_start to chunk_start + chunk_size - 1.
 //Counts up and multiplies the prime factors of each candidate, disqualifying any candidates where 2 or -2
 //is not a primitive root along the way, by checking if 2^(2n/p) mod 2n+1 is 1 for any prime factor p.
-std::vector<long> queneau_sieve(long chunk_start)
+std::vector<long> queneau_sieve(long chunk_start, int* primes, int total_primes)
 {
     bool* skip;
     int i, p, num_primes;
-    long j, divisor, first_pos, step, chunk_stop, root, order, count;
+    long j, first_pos, step, chunk_stop, root, order, count;
+    __int128 divisor;
     std::vector<long> qlist;
     
     //Contains the products of all prime factors (w/ multiplicity) below sqrt(2n) for each 'order' (2n).
@@ -106,8 +103,8 @@ std::vector<long> queneau_sieve(long chunk_start)
         fprods[j] = 1;
     
     //Sieve out numbers where n%4=0 or 2n+1 is composite
-    num_primes = count_primes(2*(chunk_start + chunk_size) - 1);
-    skip = prime_sieve(chunk_start, num_primes);
+    num_primes = count_primes(2*(chunk_start + chunk_size) - 1, primes, total_primes);
+    skip = prime_sieve(chunk_start, num_primes, primes);
 
     //Final n value in chunk, plus one. Only needed to bound p^e when chunk_start is 0. We only
     //need to check up to final n rather than final 2n, because if (p^e|2n), then (p^e|n) when
@@ -120,7 +117,6 @@ std::vector<long> queneau_sieve(long chunk_start)
         p = primes[i];
         
         //Secondary Loop: Loop through powers of each prime.
-        //This only runs to completion when chunk_start is 0.
         for(divisor = p; divisor < chunk_stop; divisor *= p)
         {
             //Get the offset of the first value divisible by p^e.
@@ -207,6 +203,7 @@ std::vector<long> queneau_sieve(long chunk_start)
 //the total range by chunk_size to be divided amongst parallel threads using OpenMP.
 int main(int argc, char *argv[])
 {
+    int i, total_primes;
     long count, chunk_total, j;
     
     //Read in bounds and chunk size from command line (defaults to 0)
@@ -217,6 +214,14 @@ int main(int argc, char *argv[])
     
     //Queneaus are stored in an array of separate vectors to prevent a race condition
     std::vector<long>* lists = new std::vector<long>[nchunks];
+    
+    //Read in primes from primes.dat
+    std::ifstream prime_file("primes.dat");
+    prime_file.read((char *) &total_primes, sizeof(int));
+    int* primes = new int[total_primes];
+    for(i = 0; i < total_primes; i++)
+        prime_file.read((char *) &primes[i], sizeof(int));
+    prime_file.close();
     
     //Create output file name
     std::string outfile_name = "output/";
@@ -235,11 +240,13 @@ int main(int argc, char *argv[])
     //Use OpenMP to split chunks among threads
     #pragma omp parallel for
     for(int i = 0; i < nchunks; i++)
-        lists[i] = queneau_sieve(start + i * chunk_size);
+        lists[i] = queneau_sieve(start + i * chunk_size, primes, total_primes);
+    
+    delete[] primes;
     
     //Count up the total number of Queneaus found
     count = 0;
-    for(int i = 0; i < nchunks; i++)
+    for(i = 0; i < nchunks; i++)
     {
         //Count up totals
         chunk_total = lists[i].size();
