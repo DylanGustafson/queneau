@@ -6,7 +6,6 @@
 //IO file names
 const char* primes_file = "primes.dat";
 const char* output_file = "output.txt";
-const char* totals_file = "totals.txt";
 
 //Global vars that remain constant across each thread
 long chunk_size;
@@ -248,18 +247,11 @@ int main(int argc, char *argv[])
     fread(primes, sizeof(int), total_primes, p_file);     //The rest is the primes themselves
     fclose(p_file);
     
-    //Open/create the output files BEFORE doing calculations in case there's an issue
+    //Open the output file BEFORE doing calculations in case there's an issue
     FILE* o_file = fopen(output_file, "w");
     if(o_file == NULL)
     {
         printf("Could not create \"%s\"\n", output_file);
-        return 1;
-    }
-    
-    FILE* t_file = fopen(totals_file, "a");
-    if(t_file == NULL)
-    {
-        printf("Could not create \"%s\"\n", totals_file);
         return 1;
     }
     
@@ -291,10 +283,6 @@ int main(int argc, char *argv[])
     free(lists);
     free(counts);
     
-    //Print total and exit
-    fprintf(t_file, "%li to %li: %li\n", start, start + block_size, total_count);
-    fclose(t_file);
-    
-    printf("Total Queneaus from %li to %li: %li\n", start, start + block_size, total_count);
+    printf("%li\n", total_count);
     return 0;
 }
