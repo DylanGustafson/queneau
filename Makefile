@@ -1,4 +1,4 @@
-queneau-list: queneau.c
+queneau: queneau.c
 	gcc -o queneau -O3 -fopenmp -Wno-unused-result queneau.c
 
 prime-sieve: prime-sieve.c

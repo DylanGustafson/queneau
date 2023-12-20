@@ -32,10 +32,9 @@ long pow2mod(long n, long b)
     return (long)res;
 }
 
-//Performs a sieve of eratosthenes on the chunk. Returns an array of bools
-//indicating which numbers in the chunk to skip because 2n+1 is prime or n%4=0
-int prime_sieve(long chunk_start, int num_primes, char* skip)
-{
+//Performs a sieve of eratosthenes on the chunk. Returns the number of primes needed to do so.
+int prime_sieve(long chunk_start, int num_primes, char *skip)
+{ 
     int i, p;
     long j, N_min, N_max, mstart;
 
@@ -72,7 +71,9 @@ int prime_sieve(long chunk_start, int num_primes, char* skip)
     return i;
 }
 
-long root_sieve(long chunk_start, int num_primes, char* skip)
+//Uses a prime factor sieve to disqualify any value where 2 (or -2) is not a
+//primitive root of 2n+1. Returns the number of valid indices remaining in "skip"
+long root_sieve(long chunk_start, int num_primes, char *skip)
 {
     int i, p;
     long j, first_pos, step, chunk_stop, order, pm, count;
@@ -96,15 +97,10 @@ long root_sieve(long chunk_start, int num_primes, char* skip)
     for(i = 0; i < num_primes; i++)
     {
         p = primes[i];
-        //std::cout << std::endl;
         
         //Secondary Loop: Loop through powers of each prime.
         for(divisor = p; divisor < chunk_stop; divisor *= p)
         {
-            //For debugging
-            //std::cout << (long)divisor << ' ';
-            //fflush(stdout);
-            
             //Get the offset of the first value divisible by p^e.
             //Should be chunk_start * 2 if chunk_start is odd
             first_pos = offset(chunk_start, divisor);
@@ -181,10 +177,8 @@ long root_sieve(long chunk_start, int num_primes, char* skip)
     return count;
 }
 
-
-//Thread entry point. Finds all Queneau numbers from chunk_start to chunk_start + chunk_size - 1.
-//Counts up and multiplies the prime factors of each candidate, disqualifying any candidates where 2 or -2
-//is not a primitive root along the way, by checking if 2^(2n/p) mod 2n+1 is 1 for any prime factor p.
+//Thread entry point. Sets up array of chars (bools) indicating which n values in the chunk are
+//disqualified, using prime_sieve and root_sieve. Returns a long array of valid queneau numbers.
 long* queneau_sieve(long chunk_start, int num_primes, long* chunk_count)
 {
     long i, j;
@@ -209,7 +203,7 @@ long* queneau_sieve(long chunk_start, int num_primes, long* chunk_count)
     
     qlist = (long*) malloc(*chunk_count * sizeof(long));
     
-    //Fill qlist with each valid Queneau number
+    //Fill qlist with each valid queneau number
     i = 0;
     for(j = 0; j < chunk_size; j++)
     {
@@ -274,7 +268,7 @@ int main(int argc, char *argv[])
         for(j = 0; j < counts[i]; j++)
             fprintf(o_file, "%li\n", lists[i][j]);
         
-        //Delete each chunk list after writing
+        //Delete each chunk qlist after writing
         free(lists[i]);
     }
     fclose(o_file);

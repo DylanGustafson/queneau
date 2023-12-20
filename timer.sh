@@ -1,5 +1,5 @@
 #!/bin/bash
-x="./queneau-$1"
+x="./$1"
 if ! [ -f $x ]; then
 	echo Rebuilding executable...
 	make $x
@@ -7,9 +7,8 @@ if ! [ -f $x ]; then
 fi
 
 echo "Running $x..."
-a=$(date +%s.%N)
+a=$(date +%s)
 $x $2 $3 $4
-b=$(date +%s.%N)
+b=$(date +%s)
 
-t=$(echo "$b-$a" | bc)
-echo Total time\: $t seconds
+echo Total time\: $(($b-$a)) seconds
