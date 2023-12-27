@@ -6,14 +6,15 @@ exp=${#zeros}
 dir_execute="/Users/gustafsondy/queneau"
 dir_storage="/UsersGbl/gustafsondy/queneau"
 x="$dir_execute/queneau"
-tfile="$dir_storage/totals.txt"
+tfile="$dir_storage/totals-${1}e${exp}-to-${2}e${exp}.txt"
 
 echo
-echo "----------NEW BATCH-----------" 
-echo "Starting point:    ${1}e${exp}"
-echo "Thread chunk size: $chunk"
-echo "Block size:        ${3}e${exp}"
-echo "Stopping point:    ${2}e${exp}"
+echo "-----------NEW BATCH------------" 
+echo "Starting point:     ${1}e${exp}"
+echo "Thread chunk size:  $chunk"
+echo "Block size:         ${3}e${exp}"
+echo "Stopping point:     ${2}e${exp}"
+echo "Storing vals (y/n): ${4}"
 
 touch $tfile
 echo >> $tfile
@@ -28,17 +29,19 @@ for (( i=$1; i<$2; i+=$3 )); do
 	echo "Running $cmd"
 	total=$($cmd)
 
-	echo "Moving output"
 	next=$(($i+$3))
 	from=$(printf "%06d" $i)
 	to=$(printf "%06d" $next)
 	
 	name="${from}e${exp}-to-${to}e${exp}"
-	outfile="$dir_storage/$name"
 
-	mv "$dir_execute/output.txt" $outfile
-	echo "Saved to $outfile"
-
+	if [ $4 == "y" ]; then
+	    echo "Moving output"
+	    outfile="$dir_storage/$name"
+	    mv "$dir_execute/output.txt" $outfile
+	    echo "Saved to $outfile"
+    fi
+    
 	echo "${name}: $total" >> $tfile
 	echo "Saved total to $tfile"
 done

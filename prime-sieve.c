@@ -4,7 +4,7 @@
 //Loads the global int array "primes" with a list of prime numbers
 #include "primes.h"
 
-int main(int argc, const char** argv)
+int main(int argc, char* argv[])
 {
     int i, j, n, p, sum;
     int max = atoi(argv[argc - 1]);
@@ -43,7 +43,7 @@ int main(int argc, const char** argv)
         if(!skip[j])
             sum++;
     
-    size_t a = fwrite(&sum, sizeof(int), 1, outfile);
+    fwrite(&sum, sizeof(int), 1, outfile);
     for(j = 0; j < max; j++)
         if(!skip[j])
             fwrite(&j, sizeof(int), 1, outfile);

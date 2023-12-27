@@ -5,7 +5,6 @@
 
 //IO file names
 const char* primes_file = "primes.dat";
-const char* output_file = "output.txt";
 
 //Global vars that remain constant across each thread
 long chunk_size;
@@ -167,9 +166,7 @@ long root_sieve(const long chunk_start, const int num_primes, char* skip)
         
         //Check if 2^(2n/p) % (2n+1) = 1, where p is the largest prime factor of 2n. 2n/p is
         //just fprod[j], which we know is even, therefore we don't need to consider -2 here.
-        if (pow2mod(fprods[j], order + 1) == 1)
-            skip[j] = 1;
-        else
+        if (pow2mod(fprods[j], order + 1) != 1)
             count++;
     }
     
@@ -180,11 +177,10 @@ long root_sieve(const long chunk_start, const int num_primes, char* skip)
 
 //Thread entry point. Sets up array of chars (bools) indicating which n values in the chunk are
 //disqualified, using prime_sieve and root_sieve. Returns a long array of valid queneau numbers.
-long* queneau_sieve(const long chunk_start, long* chunk_count)
+long queneau_sieve(const long chunk_start)
 {
     int num_primes;
-    long i, j;
-    long* qlist;
+    long i, j, chunk_count;
     
     //Array of indices to skip (skip[j] = 0 means chunk_start + j is a queneau)
     char* skip = (char*) malloc(chunk_size);
@@ -202,22 +198,11 @@ long* queneau_sieve(const long chunk_start, long* chunk_count)
     num_primes = prime_sieve(chunk_start, skip);
     
     //Sieve out numbers where 2 (or -2) is not a primitive root mod 2n+1, and update chunk_count
-    *chunk_count = root_sieve(chunk_start, num_primes, skip);
-    
-    qlist = (long*) malloc(*chunk_count * sizeof(long));
-    
-    //Fill qlist with each valid queneau number
-    i = 0;
-    for(j = 0; j < chunk_size; j++)
-    {
-        if(skip[j]) continue;
-        qlist[i] = chunk_start + j;
-        i++;
-    }
+    chunk_count = root_sieve(chunk_start, num_primes, skip);
     
     //Garbage collect and return
     free(skip);
-    return qlist;
+    return chunk_count;
 }
 
 //Main entry point. Reads in upper limit and chunk_size from argv, then splits
@@ -232,8 +217,7 @@ int main(int argc, char* argv[])
     chunk_size = atol(argv[argc - 1]);
     int nchunks = block_size / chunk_size;
     
-    //Queneaus are stored in an array of separate vectors to prevent a race condition
-    long** lists = (long**) malloc(nchunks * sizeof(long*));
+    //Allocate list of chunk counts
     long* counts = (long*) malloc(nchunks * sizeof(long));
     
     //Open primes.dat to get primes needed for sieve
@@ -252,18 +236,10 @@ int main(int argc, char* argv[])
     fread(primes, sizeof(int), total_primes, p_file);
     fclose(p_file);
     
-    //Open the output file BEFORE doing calculations in case there's an issue
-    FILE* o_file = fopen(output_file, "w");
-    if(o_file == NULL)
-    {
-        printf("Could not create \"%s\"\n", output_file);
-        return 1;
-    }
-    
     //Use OpenMP to split chunks among threads
     #pragma omp parallel for
     for(int i = 0; i < nchunks; i++)
-        lists[i] = queneau_sieve(start + i * chunk_size, &counts[i]);
+        counts[i] = queneau_sieve(start + i * chunk_size);
     
     //Dont need list of primes anymore
     free(primes);
@@ -271,21 +247,9 @@ int main(int argc, char* argv[])
     //Count up the total number of Queneaus found
     total_count = 0;
     for(int i = 0; i < nchunks; i++)
-    {
-        //Sum up the total count
         total_count += counts[i];
-        
-        //Write Queneau numbers to output file
-        for(j = 0; j < counts[i]; j++)
-            fprintf(o_file, "%li\n", lists[i][j]);
-        
-        //Delete each chunk qlist after writing
-        free(lists[i]);
-    }
-    fclose(o_file);
     
     //Delete pointers to chunk lists and their list sizes
-    free(lists);
     free(counts);
     
     printf("%li\n", total_count);
