@@ -6,6 +6,10 @@ exp=${#zeros}
 dir_execute="/Users/gustafsondy/queneau"
 dir_storage="/UsersGbl/gustafsondy/queneau"
 x="$dir_execute/queneau"
+if [ $4 != "y" ]; then
+	x="${x}-count"
+fi
+
 tfile="$dir_storage/totals-${1}e${exp}-to-${2}e${exp}.txt"
 
 echo
@@ -40,7 +44,7 @@ for (( i=$1; i<$2; i+=$3 )); do
 	    outfile="$dir_storage/$name"
 	    mv "$dir_execute/output.txt" $outfile
 	    echo "Saved to $outfile"
-    fi
+	fi
     
 	echo "${name}: $total" >> $tfile
 	echo "Saved total to $tfile"
