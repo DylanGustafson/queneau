@@ -1,5 +1,8 @@
 queneau: queneau.c
 	gcc -o queneau -O3 -fopenmp -Wno-unused-result queneau.c
+
+queneau-diffs: queneau-diffs.c
+	gcc -o queneau -O3 -fopenmp -Wno-unused-result queneau-diffs.c
 	
 queneau-count: queneau-count.c
 	gcc -o queneau-count -O3 -fopenmp -Wno-unused-result queneau-count.c

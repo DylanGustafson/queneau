@@ -4,7 +4,7 @@ zeros="000000000"
 exp=${#zeros}
 
 dir_execute="/Users/gustafsondy/queneau"
-dir_storage="/UsersGbl/gustafsondy/queneau"
+dir_storage="/quen_storage"
 x="$dir_execute/queneau"
 if [ $4 != "y" ]; then
 	x="${x}-count"
@@ -42,8 +42,9 @@ for (( i=$1; i<$2; i+=$3 )); do
 	if [ $4 == "y" ]; then
 	    echo "Moving output"
 	    outfile="$dir_storage/$name"
-	    mv "$dir_execute/output.txt" $outfile
-	    echo "Saved to $outfile"
+	    mv $dir_execute/output.txt $dir_execute/$name
+	    mv $dir_execute/$name $outfile &
+	    echo "Saving to $outfile"
 	fi
     
 	echo "${name}: $total" >> $tfile
